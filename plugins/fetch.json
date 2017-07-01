@@ -1,0 +1,26 @@
+{
+    "cordova-background-geolocation-lt": {
+        "source": {
+            "type": "registry",
+            "id": "cordova-background-geolocation-lt"
+        },
+        "is_top_level": true,
+        "variables": {}
+    },
+    "cordova-plugin-dialogs": {
+        "source": {
+            "type": "registry",
+            "id": "cordova-plugin-dialogs"
+        },
+        "is_top_level": false,
+        "variables": {}
+    },
+    "cordova-plugin-background-fetch": {
+        "source": {
+            "type": "registry",
+            "id": "cordova-plugin-background-fetch"
+        },
+        "is_top_level": false,
+        "variables": {}
+    }
+}

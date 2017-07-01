@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+        <title>Loggeur IFTA automatique</title>
+    </head>
+    <body onload="onLoad()">
+        
+        <br><br>
+        
+        <div id="divun"></div>
+        
+        <script>
+            function onLoad() {
+                document.addEventListener('deviceready', onDeviceReady,false);
+            }
+            
+            function onDeviceReady() {
+        
+                getLoco(setLoco);        
+                
+                function getLoco(foncSuivante) {
+                    if(navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(foncSuivante);
+                    } else {
+                        alert('Pas de géolocalisation possible');
+                    }
+                }
+                
+                function setLoco(infoDeLoco) {
+                    var odometre = Cookies.get('odometre');
+                    odometre = parseInt(odometre);
+            
+                    if(odometre === undefined) {
+                        odometre = 'odometre';
+                    } else {
+                        odometre = odometre;
+                    }
+                    
+                    var odoIN = prompt('odomètre?', odometre);
+                    Cookies.set('odometre', odoIN, {expires: 365});
+                    
+                    Cookies.set('positionDeDepart',{lat:infoDeLoco.coords.latitude, lng:infoDeLoco.coords.longitude, vitesse:infoDeLoco.coords.speed, timestamp:infoDeLoco.timestamp});
+                    
+                    Cookies.set('distanceParEtat',0);
+                    
+                    checkLoco();
+                    
+                }
+                
+                function checkLoco() {
+                    setInterval(getLoco, 10000, logLoco);
+                }
+                
+                function logLoco(input) {
+                    
+                    Cookies.set('positionLog', {lat:input.coords.latitude, lng:input.coords.longitude, vitesse:input.coords.speed, timestamp:input.timestamp});
+                    var positionLog = Cookies.get('positionLog');
+                    
+                    getMapQuest(positionLog);
+                }
+                
+                function getMapQuest(input) {
+                    
+                    var positionDeDepart = Cookies.getJSON('positionDeDepart');
+                    var inputParse = JSON.parse(input);
+                    
+                    $.ajax({
+                        url: 'http://www.mapquestapi.com/directions/v2/routematrix?',
+                        dataType: 'json',
+                        crossDomain: true,
+                        data: {
+                            key: 'DIoSsQWdUkpp5cX2KI8uDCqHsRykIEFC',
+                            json: "{'locations': ['" + positionDeDepart.lat + "," + positionDeDepart.lng + "','" + inputParse.lat + "," + inputParse.lng + "']}"
+                        },
+                        success: function(retour) {
+                            
+//                            var admin1OUT = retour.locations[0].adminArea1;
+                            var admin3OUT = retour.locations[0].adminArea3;
+//                            var admin4OUT = retour.locations[0].adminArea4;
+                            var admin5OUT = retour.locations[0].adminArea5;
+                            var streetOUT = retour.locations[0].street;
+//                            var admin1IN = retour.locations[1].adminArea1;
+                            var admin3IN = retour.locations[1].adminArea3;
+//                            var admin4IN = retour.locations[1].adminArea4;
+                            var admin5IN = retour.locations[1].adminArea5;
+                            var streetIN = retour.locations[1].street;
+                            var distance = retour.distance[1];
+                            var distance = distance;
+                            
+//                            var odometre = Cookies.get('odometre');
+//                            odometre = parseFloat(odometre);
+//                            odometre = odometre + distance;
+//                            
+//                            Cookies.set('odometre', odometre);
+                            
+                            document.getElementById('divun').innerHTML +=
+                                'Tu es parti du ' + streetOUT + ' au ' + admin3OUT + ' et tu es maintenant au ' + streetIN + ' au/en ' + admin3IN + ', à ' + distance + ' km de ton point de départ.<br><br>';
+                            
+                            getEtat(retour);
+                        },
+                        error: function(err) {
+                            console.log(err);
+                        }
+                    });
+                }
+                
+                function getEtat(input) {
+                    if(input.locations[0].street !== input.locations[1].street) {
+                        console.log('Même état. Fait de quoi.');
+                        var odometre = Cookies.get('odometre');
+                        odometre = parseFloat(odometre);
+                        var distance = input.distance[1];
+                        distance = distance + 12;
+//                        console.log('Type odomètre : ' + typeof odometre + ' Type distance : ' + typeof distance);
+                        var nouvelOdometre = odometre + distance;
+                        Cookies.set('odometre', nouvelOdometre, {expires: 365});
+                        
+                        var distanceParcourue = Cookies.get('distanceParEtat');
+                        distanceParcourue = distanceParcourue + distance;
+                        Cookies.set('distanceParEtat',distanceParcourue);
+                    } else {
+//                        console.log('Nouvel état. Sauve de quoi qq part.');
+//                        var distanceParcourue = Cookies.get('distanceParEtat');
+//                        var dataPourServeur = {};
+//                        dataPourServeur.etat = input.locations[0].adminArea3;
+//                        dataPourServeur.milage = distanceParcourue;
+//                        Cookies.set('distanceParEtat', 0);
+//                        console.log(dataPourServeur);
+                        
+                        var x = JSON.stringify({ data: 'miarrey' });
+                        
+                        $.ajax({
+                            url: 'php/sauvegarde.php',
+                            type: 'POST',
+                            data: x,
+                            contentType: "application/json",
+                            success: function(data) {
+//                            JSON.parse(data);
+//                            console.log(data);
+                                alert('ok.')
+                        },
+                            error: function(data, textStatus, errorThrown) {
+                                console.log("Statut: " + textStatus);
+                                console.log("Erreur: " + errorThrown);
+                                console.log('bad ' + data);
+                                alert('nope.')
+            }
+                        });
+                    }
+                }
+                
+            }
+            
+        </script>
+        
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script src="js/js.cookies.js"></script>
+        
+    </body>
+</html>
